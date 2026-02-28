@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マイホーム購入 初期費用シミュレーター</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Chosen Palette: Warm Neutrals (Background: #F9F8F6, Primary: #C1A57B, Text: #4A4238, Accents: Earthy tones) -->
+    <!-- Application Structure Plan: The SPA is structured as an interactive dashboard. Added a Mortgage Repayment calculator to the initial costs simulator. This allows users to understand not only their upfront cash needs but also their ongoing monthly financial commitment, providing a holistic view of the home buying process. -->
+    <!-- Visualization & Content Choices: 
+         1. Interactive Inputs (Goal: Inform/Change) -> Sliders for Property Price, Loan, Years, and Interest Rate.
+         2. Results Display -> Two prominent cards highlighting Total Upfront Cost and Monthly Repayment.
+         3. Donut Chart & Thematic Cards -> Maintained for detailed breakdown of upfront costs. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            background-color: #F9F8F6;
+            color: #4A4238;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        input[type=range] {
+            accent-color: #C1A57B;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen pb-16">
+
+    <header class="bg-white shadow-sm border-b border-[#E8E1D7] py-8 mb-8 text-center">
+        <div class="max-w-4xl mx-auto px-4">
+            <h1 class="text-3xl md:text-4xl font-bold mb-3 text-[#3A332C]">🏠 マイホーム購入 資金計画シミュレーター</h1>
+            <p class="text-lg text-[#7A7168]">初期費用と月々の返済額を正確に把握し、安心の家づくりを。</p>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 space-y-12">
+
+        <section class="glass-card rounded-2xl p-6 md:p-10">
+            <h2 class="text-2xl font-bold mb-4 border-l-4 border-[#C1A57B] pl-4">📊 1. 総合資金シミュレーター</h2>
+            <p class="mb-8 text-[#6B635A] leading-relaxed">
+                このセクションでは、ご検討中の物件価格や借入希望額を入力することで、あなた専用の初期費用を自動計算します。<br><br>
+                実務的な計算式に基づき、購入時に必要な現金の目安を瞬時に把握できます。<br><br>
+                さらに、返済期間と金利を設定すれば、月々のローン返済額も同時に確認可能です。<br><br>
+                スライダーを動かして、資金計画がどう変化するか試してみましょう。
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+                <div class="space-y-6 bg-[#FDFCFB] p-6 rounded-xl border border-[#E8E1D7]">
+                    
+                    <div>
+                        <label class="block text-sm font-semibold mb-2" for="propertyPrice">物件価格 (万円)</label>
+                        <div class="flex items-center space-x-4">
+                            <input type="range" id="propertyPriceSlider" min="1000" max="10000" step="100" value="4000" class="w-full h-2 rounded-lg appearance-none cursor-pointer bg-[#E8E1D7]">
+                            <div class="flex items-center bg-white border border-[#D1C7BD] rounded px-3 py-2 w-32 shrink-0">
+                                <input type="number" id="propertyPriceInput" value="4000" class="w-full outline-none text-right font-bold text-lg text-[#C1A57B]">
+                                <span class="ml-1 text-sm">万円</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold mb-2" for="loanAmount">借入額 (万円)</label>
+                        <div class="flex items-center space-x-4">
+                            <input type="range" id="loanAmountSlider" min="0" max="10000" step="100" value="4000" class="w-full h-2 rounded-lg appearance-none cursor-pointer bg-[#E8E1D7]">
+                            <div class="flex items-center bg-white border border-[#D1C7BD] rounded px-3 py-2 w-32 shrink-0">
+                                <input type="number" id="loanAmountInput" value="4000" class="w-full outline-none text-right font-bold text-lg text-[#C1A57B]">
+                                <span class="ml-1 text-sm">万円</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold mb-2" for="repaymentYears">返済期間 (年)</label>
+                            <div class="flex flex-col space-y-2">
+                                <div class="flex items-center bg-white border border-[#D1C7BD] rounded px-3 py-2">
+                                    <input type="number" id="repaymentYearsInput" value="35" min="10" max="50" class="w-full outline-none text-right font-bold text-lg text-[#4A4238]">
+                                    <span class="ml-1 text-sm">年</span>
+                                </div>
+                                <input type="range" id="repaymentYearsSlider" min="10" max="50" step="1" value="35" class="w-full h-2 rounded-lg appearance-none cursor-pointer bg-[#E8E1D7]">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold mb-2" for="interestRate">金利 (%)</label>
+                            <div class="flex flex-col space-y-2">
+                                <div class="flex items-center bg-white border border-[#D1C7BD] rounded px-3 py-2">
+                                    <input type="number" id="interestRateInput" value="0.5" min="0.5" max="4.0" step="0.1" class="w-full outline-none text-right font-bold text-lg text-[#4A4238]">
+                                    <span class="ml-1 text-sm">%</span>
+                                </div>
+                                <input type="range" id="interestRateSlider" min="0.5" max="4.0" step="0.1" value="0.5" class="w-full h-2 rounded-lg appearance-none cursor-pointer bg-[#E8E1D7]">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-[#E8E1D7]">
+                        <label class="block text-sm font-semibold mb-2" for="optionsCost">新築オプション・追加工事 (万円)</label>
+                        <div class="flex items-center space-x-4">
+                            <input type="range" id="optionsCostSlider" min="0" max="300" step="10" value="65" class="w-full h-2 rounded-lg appearance-none cursor-pointer bg-[#E8E1D7]">
+                            <div class="flex items-center bg-white border border-[#D1C7BD] rounded px-3 py-2 w-32 shrink-0">
+                                <input type="number" id="optionsCostInput" value="65" class="w-full outline-none text-right font-bold text-lg text-[#C1A57B]">
+                                <span class="ml-1 text-sm">万円</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="space-y-6">
+                    <div class="flex flex-col justify-center items-center bg-[#C1A57B] text-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-lg font-medium mb-1 opacity-90">現金で必要な諸費用（目安）</h3>
+                        <div class="text-4xl md:text-5xl font-bold mb-2 tracking-tight">
+                            <span id="totalCostDisplay">0</span><span class="text-xl ml-2 font-normal">円</span>
+                        </div>
+                        <p class="text-xs opacity-80 text-center">※物件や条件により金額は前後します。</p>
+                    </div>
+
+                    <div class="flex flex-col justify-center items-center bg-white border-2 border-[#C1A57B] text-[#4A4238] p-6 rounded-xl shadow-md">
+                        <h3 class="text-lg font-medium mb-1 text-[#C1A57B]">月々の返済額（目安）</h3>
+                        <div class="text-4xl md:text-5xl font-bold mb-2 tracking-tight">
+                            <span id="monthlyPaymentDisplay">0</span><span class="text-xl ml-2 font-normal">円</span>
+                        </div>
+                        <p class="text-xs text-[#8A8178] text-center">※元利均等返済・ボーナス払いなし。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="glass-card rounded-2xl p-6 md:p-10">
+            <h2 class="text-2xl font-bold mb-4 border-l-4 border-[#C1A57B] pl-4">🍩 2. 初期費用の内訳割合</h2>
+            <p class="mb-8 text-[#6B635A] leading-relaxed">
+                ご用意いただく「諸費用」の内訳を視覚的に確認できるグラフです。<br><br>
+                仲介手数料や銀行の事務手数料が、全体の中で大きな割合を占めることがわかります。
+            </p>
+
+            <div class="flex flex-col lg:flex-row items-center justify-center gap-8">
+                <div class="w-full lg:w-1/2">
+                    <div class="chart-container">
+                        <canvas id="costBreakdownChart"></canvas>
+                    </div>
+                </div>
+                <div class="w-full lg:w-1/2 overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b-2 border-[#E8E1D7]">
+                                <th class="py-3 px-2 text-[#8A8178] font-medium">カテゴリー</th>
+                                <th class="py-3 px-2 text-[#8A8178] font-medium text-right">金額</th>
+                                <th class="py-3 px-2 text-[#8A8178] font-medium text-right">割合</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summaryTableBody" class="divide-y divide-[#E8E1D7]">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section class="glass-card rounded-2xl p-6 md:p-10">
+            <h2 class="text-2xl font-bold mb-4 border-l-4 border-[#C1A57B] pl-4">📖 3. 各費用の詳細解説</h2>
+            <p class="mb-8 text-[#6B635A] leading-relaxed">
+                各費用の詳細な内訳と算出根拠を解説しています。<br><br>
+                なぜその費用が必要なのか、実務のルールに沿って整理しました。<br><br>
+                各カードをクリックして詳細を確認してください。
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <div class="bg-white border border-[#E8E1D7] rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+                    <div class="bg-[#FDFCFB] px-5 py-4 border-b border-[#E8E1D7] flex justify-between items-center cursor-pointer" onclick="toggleDetails('detail-contract')">
+                        <h3 class="font-bold text-lg flex items-center">📝 1. 契約・おうちに関する費用</h3>
+                        <span class="text-[#C1A57B] font-bold text-xl" id="total-category-1">0円</span>
+                    </div>
+                    <div id="detail-contract" class="p-5 space-y-4">
+                        <div class="flex justify-between items-start border-b border-gray-100 pb-3">
+                            <div>
+                                <h4 class="font-semibold flex items-center gap-2">🤝 仲介手数料</h4>
+                                <p class="text-sm text-gray-500 mt-1">算出: (物件価格×3%+6万円)×消費税</p>
+                            </div>
+                            <span class="font-bold text-[#C1A57B]" id="val-brokerage">0円</span>
+                        </div>
+                        <div class="flex justify-between items-start pb-2">
+                            <div>
+                                <h4 class="font-semibold flex items-center gap-2">📄 売買契約書 印紙代</h4>
+                                <p class="text-sm text-gray-500 mt-1">契約金額5,000万円以下は1万円（軽減税率）</p>
+                            </div>
+                            <span class="font-bold text-[#C1A57B]" id="val-stamp">10,000円</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-[#E8E1D7] rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+                    <div class="bg-[#FDFCFB] px-5 py-4 border-b border-[#E8E1D7] flex justify-between items-center cursor-pointer" onclick="toggleDetails('detail-loan')">
+                        <h3 class="font-bold text-lg flex items-center">🏦 2. 住宅ローン・安心のための費用</h3>
+                        <span class="text-[#C1A57B] font-bold text-xl" id="total-category-2">0円</span>
+                    </div>
+                    <div id="detail-loan" class="p-5 space-y-4">
+                        <div class="flex justify-between items-start border-b border-gray-100 pb-3">
+                            <div>
+                                <h4 class="font-semibold flex items-center gap-2">💴 銀行事務手数料</h4>
+                                <p class="text-sm text-gray-500 mt-1">借入額 × 2.2%（税込）</p>
+                            </div>
+                            <span class="font-bold text-[#C1A57B]" id="val-bank">0円</span>
+                        </div>
+                        <div class="flex justify-between items-start pb-2">
+                            <div>
+                                <h4 class="font-semibold flex items-center gap-2">🔥 火災保険料（5年間）</h4>
+                                <p class="text-sm text-gray-500 mt-1">構造や地震保険の有無で変動。5年一括の目安。</p>
+                            </div>
+                            <span class="font-bold text-[#C1A57B]" id="val-insurance">200,000円</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-[#E8E1D7] rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+                    <div class="bg-[#FDFCFB] px-5 py-4 border-b border-[#E8E1D7] flex justify-between items-center cursor-pointer" onclick="toggleDetails('detail-reg')">
+                        <h3 class="font-bold text-lg flex items-center">🏢 3. 登記・税金・その他の費用</h3>
+                        <span class="text-[#C1A57B] font-bold text-xl" id="total-category-3">0円</span>
+                    </div>
+                    <div id="detail-reg" class="p-5 space-y-4">
+                        <div class="flex justify-between items-start border-b border-gray-100 pb-3">
+                            <div>
+                                <h4 class="font-semibold flex items-center gap-2">🖋️ 登記費用</h4>
+                                <p class="text-sm text-gray-500 mt-1">登録免許税（実費）と司法書士への報酬目安<br>※物件価格と借入額に応じて変動します</p>
+                            </div>
+                            <span class="font-bold text-[#C1A57B]" id="val-reg">400,000円</span>
+                        </div>
+                        <div class="flex justify-between items-start border-b border-gray-100 pb-3">
+                            <div>
+                                <h4 class="font-semibold flex items-center gap-2">📐 表示登記費用</h4>
+                                <p class="text-sm text-gray-500 mt-1">人間で例える「出生届」。建物の物理的登記。</p>
+                            </div>
+                            <span class="font-bold text-[#C1A57B]" id="val-reg-display">100,000円</span>
+                        </div>
+                        <div class="flex justify-between items-start border-b border-gray-100 pb-3">
+                            <div>
+                                <h4 class="font-semibold flex items-center gap-2">💰 固定資産税清算金</h4>
+                                <p class="text-sm text-gray-500 mt-1">引渡日に応じた日割り計算の目安</p>
+                            </div>
+                            <span class="font-bold text-[#C1A57B]" id="val-tax">100,000円</span>
+                        </div>
+                        <div class="flex justify-between items-start pb-2">
+                            <div>
+                                <h4 class="font-semibold flex items-center gap-2">💸 振込手数料</h4>
+                                <p class="text-sm text-gray-500 mt-1">決済時の送金数件分目安</p>
+                            </div>
+                            <span class="font-bold text-[#C1A57B]" id="val-transfer">5,000円</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-[#E8E1D7] rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+                    <div class="bg-[#FDFCFB] px-5 py-4 border-b border-[#E8E1D7] flex justify-between items-center cursor-pointer" onclick="toggleDetails('detail-options')">
+                        <h3 class="font-bold text-lg flex items-center">🛠️ 4. 新築オプション工事</h3>
+                        <span class="text-[#C1A57B] font-bold text-xl" id="total-category-4">0円</span>
+                    </div>
+                    <div id="detail-options" class="p-5 space-y-4">
+                        <div class="flex justify-between items-start pb-2">
+                            <div>
+                                <h4 class="font-semibold flex items-center gap-2">🔨 オプション工事費</h4>
+                                <p class="text-sm text-gray-500 mt-1">網戸、カーテンレール、TVアンテナ等。<br>カーポート等をご検討の場合はさらに増額します。</p>
+                            </div>
+                            <span class="font-bold text-[#C1A57B]" id="val-options">0円</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const state = {
+            propertyPrice: 40000000,
+            loanAmount: 40000000,
+            repaymentYears: 35,
+            interestRate: 0.5,
+            optionsCost: 650000
+        };
+
+        const staticCosts = {
+            insurance: 200000,
+            regDisplay: 100000,
+            propTax: 100000,
+            transfer: 5000
+        };
+
+        const calculatedCosts = {
+            brokerage: 0,
+            stamp: 0,
+            bankFee: 0,
+            registration: 0,
+            total: 0,
+            monthlyPayment: 0,
+            cat1: 0,
+            cat2: 0,
+            cat3: 0,
+            cat4: 0
+        };
+
+        let costChart = null;
+
+        const formatJPY = (num) => {
+            return new Intl.NumberFormat('ja-JP').format(num) + '円';
+        };
+
+        const calculateAll = () => {
+            // Brokerage Fee
+            if (state.propertyPrice > 4000000) {
+                calculatedCosts.brokerage = Math.floor((state.propertyPrice * 0.03 + 60000) * 1.1);
+            } else {
+                calculatedCosts.brokerage = 0; 
+            }
+
+            // Stamp Duty
+            if (state.propertyPrice > 50000000 && state.propertyPrice <= 100000000) {
+                calculatedCosts.stamp = 30000;
+            } else if (state.propertyPrice > 10000000 && state.propertyPrice <= 50000000) {
+                calculatedCosts.stamp = 10000;
+            } else if (state.propertyPrice > 5000000 && state.propertyPrice <= 10000000) {
+                calculatedCosts.stamp = 5000;
+            } else {
+                calculatedCosts.stamp = 10000; 
+            }
+
+            // Bank Fee
+            calculatedCosts.bankFee = Math.floor(state.loanAmount * 0.022);
+
+            // Registration Fee
+            calculatedCosts.registration = Math.floor((state.propertyPrice * 0.005) + (state.loanAmount * 0.001) + 120000);
+
+            // Categories Total
+            calculatedCosts.cat1 = calculatedCosts.brokerage + calculatedCosts.stamp;
+            calculatedCosts.cat2 = calculatedCosts.bankFee + staticCosts.insurance;
+            calculatedCosts.cat3 = calculatedCosts.registration + staticCosts.regDisplay + staticCosts.propTax + staticCosts.transfer;
+            calculatedCosts.cat4 = state.optionsCost;
+
+            calculatedCosts.total = calculatedCosts.cat1 + calculatedCosts.cat2 + calculatedCosts.cat3 + calculatedCosts.cat4;
+
+            // Monthly Repayment Calculation (PMT formula)
+            if (state.loanAmount > 0 && state.repaymentYears > 0) {
+                const principal = state.loanAmount;
+                const monthlyInterest = (state.interestRate / 100) / 12;
+                const numPayments = state.repaymentYears * 12;
+
+                if (monthlyInterest > 0) {
+                    calculatedCosts.monthlyPayment = Math.floor(principal * monthlyInterest * Math.pow(1 + monthlyInterest, numPayments) / (Math.pow(1 + monthlyInterest, numPayments) - 1));
+                } else {
+                    calculatedCosts.monthlyPayment = Math.floor(principal / numPayments);
+                }
+            } else {
+                calculatedCosts.monthlyPayment = 0;
+            }
+        };
+
+        const updateDOM = () => {
+            document.getElementById('totalCostDisplay').innerText = new Intl.NumberFormat('ja-JP').format(calculatedCosts.total);
+            document.getElementById('monthlyPaymentDisplay').innerText = new Intl.NumberFormat('ja-JP').format(calculatedCosts.monthlyPayment);
+
+            document.getElementById('val-brokerage').innerText = formatJPY(calculatedCosts.brokerage);
+            document.getElementById('val-stamp').innerText = formatJPY(calculatedCosts.stamp);
+            document.getElementById('total-category-1').innerText = formatJPY(calculatedCosts.cat1);
+
+            document.getElementById('val-bank').innerText = formatJPY(calculatedCosts.bankFee);
+            document.getElementById('val-insurance').innerText = formatJPY(staticCosts.insurance);
+            document.getElementById('total-category-2').innerText = formatJPY(calculatedCosts.cat2);
+
+            document.getElementById('val-reg').innerText = '約' + formatJPY(calculatedCosts.registration);
+            document.getElementById('val-reg-display').innerText = '約' + formatJPY(staticCosts.regDisplay);
+            document.getElementById('val-tax').innerText = '約' + formatJPY(staticCosts.propTax);
+            document.getElementById('val-transfer').innerText = '約' + formatJPY(staticCosts.transfer);
+            document.getElementById('total-category-3').innerText = formatJPY(calculatedCosts.cat3);
+
+            document.getElementById('val-options').innerText = formatJPY(state.optionsCost);
+            document.getElementById('total-category-4').innerText = formatJPY(calculatedCosts.cat4);
+
+            updateSummaryTable();
+            renderChart();
+        };
+
+        const updateSummaryTable = () => {
+            const tbody = document.getElementById('summaryTableBody');
+            const data = [
+                { name: '📝 契約・おうちに関する費用', val: calculatedCosts.cat1 },
+                { name: '🏦 住宅ローン・保険に関する費用', val: calculatedCosts.cat2 },
+                { name: '🏢 登記・税金・その他の費用', val: calculatedCosts.cat3 },
+                { name: '🛠️ 新築オプション工事', val: calculatedCosts.cat4 }
+            ];
+
+            tbody.innerHTML = '';
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                const pct = calculatedCosts.total > 0 ? ((item.val / calculatedCosts.total) * 100).toFixed(1) : 0;
+                tr.innerHTML = `
+                    <td class="py-3 px-2 font-medium">${item.name}</td>
+                    <td class="py-3 px-2 text-right">${formatJPY(item.val)}</td>
+                    <td class="py-3 px-2 text-right font-bold text-[#C1A57B]">${pct}%</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        const renderChart = () => {
+            const ctx = document.getElementById('costBreakdownChart').getContext('2d');
+            
+            const data = {
+                labels: ['契約・おうち (仲介手数料等)', 'ローン・保険 (銀行手数料等)', '登記・税金等', 'オプション工事'],
+                datasets: [{
+                    data: [calculatedCosts.cat1, calculatedCosts.cat2, calculatedCosts.cat3, calculatedCosts.cat4],
+                    backgroundColor: [
+                        '#C1A57B',
+                        '#E8CAA4',
+                        '#A6B9B4',
+                        '#DCD2C6'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            };
+
+            if (costChart) {
+                costChart.data = data;
+                costChart.update();
+            } else {
+                costChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    font: { family: 'sans-serif' },
+                                    color: '#4A4238',
+                                    padding: 20
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) label += ': ';
+                                        label += new Intl.NumberFormat('ja-JP').format(context.raw) + '円';
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        cutout: '65%'
+                    }
+                });
+            }
+        };
+
+        const setupListeners = () => {
+            const syncInput = (sliderId, inputId, stateKey, multiplier, isFloat = false) => {
+                const slider = document.getElementById(sliderId);
+                const input = document.getElementById(inputId);
+
+                slider.addEventListener('input', (e) => {
+                    input.value = e.target.value;
+                    state[stateKey] = isFloat ? parseFloat(e.target.value) * multiplier : parseInt(e.target.value) * multiplier;
+                    processUpdates();
+                });
+
+                input.addEventListener('change', (e) => {
+                    let val = isFloat ? parseFloat(e.target.value) : parseInt(e.target.value);
+                    if(isNaN(val)) val = 0;
+                    slider.value = val;
+                    state[stateKey] = val * multiplier;
+                    processUpdates();
+                });
+            };
+
+            syncInput('propertyPriceSlider', 'propertyPriceInput', 'propertyPrice', 10000);
+            syncInput('loanAmountSlider', 'loanAmountInput', 'loanAmount', 10000);
+            syncInput('optionsCostSlider', 'optionsCostInput', 'optionsCost', 10000);
+            syncInput('repaymentYearsSlider', 'repaymentYearsInput', 'repaymentYears', 1);
+            syncInput('interestRateSlider', 'interestRateInput', 'interestRate', 1, true);
+        };
+
+        const processUpdates = () => {
+            calculateAll();
+            updateDOM();
+        };
+
+        const toggleDetails = (id) => {
+            const el = document.getElementById(id);
+            if (el.style.display === 'none') {
+                el.style.display = 'block';
+            } else {
+                el.style.display = 'none';
+            }
+        };
+
+        const init = () => {
+            setupListeners();
+            processUpdates();
+        };
+
+        window.onload = init;
+    </script>
+</body>
+</html>
